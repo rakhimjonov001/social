@@ -20,6 +20,7 @@ declare module "next-auth" {
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
   secret: process.env.AUTH_SECRET,
+  trustHost: true,
   session: {
     strategy: "jwt", // Оставляем JWT, это правильно для Middleware
   },
