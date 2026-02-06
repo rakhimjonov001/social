@@ -1,7 +1,6 @@
 /**
  * Container Components
- * 
- * Responsive layout containers for different content types
+ * * Responsive layout containers for different content types
  * Designed with modern minimalistic style and design tokens
  */
 
@@ -11,7 +10,9 @@ import { forwardRef, type HTMLAttributes } from "react";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-export interface ContainerProps extends Omit<HTMLAttributes<HTMLDivElement>, keyof HTMLMotionProps<"div">> {
+// ИСПРАВЛЕНИЕ: Теперь мы явно расширяем HTMLAttributes, чтобы className и children были доступны.
+// Omit здесь нужен только для того, чтобы типы motion не конфликтовали с обычным div.
+export interface ContainerProps extends HTMLAttributes<HTMLDivElement> {
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
   padding?: boolean;
   center?: boolean;
@@ -52,7 +53,8 @@ const Container = forwardRef<HTMLDivElement, ContainerProps>(
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          {...props}
+          // Приводим пропсы к типу motion, чтобы избежать конфликтов TS
+          {...(props as HTMLMotionProps<"div">)}
         >
           {children}
         </motion.div>
@@ -131,8 +133,8 @@ export const GridContainer = forwardRef<HTMLDivElement, GridContainerProps>(
         ref={ref}
         className={cn(
           "grid",
-          gridCols[cols],
-          gaps[gap],
+          gridCols[cols as keyof typeof gridCols],
+          gaps[gap as keyof typeof gaps],
           className
         )}
         {...props}
@@ -162,7 +164,7 @@ export const Section = forwardRef<HTMLDivElement, SectionProps>(
     return (
       <Container
         ref={ref}
-        className={cn(spacings[spacing], className)}
+        className={cn(spacings[spacing as keyof typeof spacings], className)}
         {...props}
       />
     );
@@ -222,11 +224,11 @@ export const FlexContainer = forwardRef<HTMLDivElement, FlexContainerProps>(
         ref={ref}
         className={cn(
           "flex",
-          directions[direction],
-          alignments[align],
-          justifications[justify],
+          directions[direction as keyof typeof directions],
+          alignments[align as keyof typeof alignments],
+          justifications[justify as keyof typeof justifications],
           wrap && "flex-wrap",
-          gaps[gap],
+          gaps[gap as keyof typeof gaps],
           className
         )}
         {...props}
