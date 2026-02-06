@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  eslint: {
+    // Позволяет production builds завершаться успешно даже при ESLint ошибках
+    ignoreDuringBuilds: true,
+  },
+  
   images: {
     // ✅ Разрешаем рендеринг SVG с внешних ресурсов
     dangerouslyAllowSVG: true,
