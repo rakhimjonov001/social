@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Force Node.js runtime for Prisma and auth compatibility
+export const runtime = 'nodejs';
+
 // 1. Изменяем тип параметров: теперь это Promise
 export async function DELETE(
   request: NextRequest,

@@ -1,6 +1,9 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 
+// Force Node.js runtime for uploadthing compatibility
+export const runtime = 'nodejs';
+
 const f = createUploadthing();
 
 const auth = (req: Request) => ({ id: "fakeId" }); // Fake auth function for now

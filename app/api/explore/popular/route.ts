@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+// Force Node.js runtime for Prisma compatibility
+export const runtime = 'nodejs';
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
+// Force Node.js runtime for Prisma and auth compatibility
+export const runtime = 'nodejs';
+
 const createCommentSchema = z.object({
   content: z.string().min(1).max(1000),
   parentId: z.string().optional().nullable(),
