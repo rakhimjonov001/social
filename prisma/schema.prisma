@@ -1,0 +1,221 @@
+// Prisma Schema for Social Media Application
+// Production-ready schema with proper relations, indexes, and cascade rules
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// AUTHENTICATION MODELS (NextAuth compatible)
+// ==========================================
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  emailVerified  DateTime?
+  username       String    @unique
+  name           String?
+  password       String?   // Hashed password for credentials auth
+  image          String?   // Avatar URL
+  bio            String?   @db.Text
+  role           UserRole  @default(USER)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // NextAuth relations
+  accounts Account[]
+  sessions Session[]
+
+  // Social media relations
+  posts     Post[]
+  comments  Comment[]
+  likes     Like[]
+
+  // Follow relations
+  followers Follow[] @relation("following") // Users who follow this user
+  following Follow[] @relation("follower")  // Users this user follows
+
+  // Notifications
+  notificationsSent     Notification[] @relation("notificationSender")
+  notificationsReceived Notification[] @relation("notificationReceiver")
+
+  @@index([email])
+  @@index([username])
+  @@index([createdAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==========================================
+// SOCIAL MEDIA MODELS
+// ==========================================
+
+model Post {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  image     String?  // Image URL (optional)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Author relation
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Post interactions
+  comments Comment[]
+  likes    Like[]
+
+  // Notifications related to this post
+  notifications Notification[]
+
+  @@index([authorId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Author relation
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Post relation
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // Reply relations (nested comments)
+  parentId String?
+  parent   Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  // Notifications related to this comment
+  notifications Notification[]
+
+  @@index([authorId])
+  @@index([postId])
+  @@index([parentId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // User who liked
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Post that was liked
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // Ensure a user can only like a post once
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+model Follow {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // The user who is following
+  followerId String
+  follower   User   @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+
+  // The user being followed
+  followingId String
+  following   User   @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  // Ensure a user can only follow another user once
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Sender of the notification
+  senderId String
+  sender   User   @relation("notificationSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  // Receiver of the notification
+  receiverId String
+  receiver   User   @relation("notificationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  // Optional relations for context
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId])
+  @@index([senderId])
+  @@index([createdAt(sort: Desc)])
+  @@index([read])
+}

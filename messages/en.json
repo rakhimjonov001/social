@@ -1,0 +1,193 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "following": "Following",
+    "followers": "Followers",
+    "likes": "Likes",
+    "comments": "Comments",
+    "share": "Share",
+    "post": "Post",
+    "posts": "Posts",
+    "users": "Users",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "explore": "Explore",
+    "feed": "Feed",
+    "profile": "Profile",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Register",
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "bio": "Bio",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "open": "Open",
+    "view": "View",
+    "hide": "Hide",
+    "show": "Show",
+    "all": "All",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your account",
+      "email": "Email",
+      "password": "Password",
+      "remember": "Remember me",
+      "forgot": "Forgot password?",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "signup": "Sign up",
+      "or": "or"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Join our community",
+      "name": "Full name",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "signin": "Sign in",
+      "or": "or"
+    }
+  },
+  "feed": {
+    "title": "Feed",
+    "empty": "No posts yet",
+    "emptySubtitle": "Follow some users to see their posts here",
+    "loadMore": "Load more posts"
+  },
+  "explore": {
+    "title": "Explore",
+    "searchPlaceholder": "Search posts, users...",
+    "peopleToFollow": "People to Follow",
+    "trendingPosts": "Trending Posts",
+    "noResults": "No results found",
+    "searching": "Searching..."
+  },
+  "profile": {
+    "edit": "Edit profile",
+    "posts": "Posts",
+    "followers": "Followers",
+    "following": "Following",
+    "bio": "Bio",
+    "website": "Website",
+    "joined": "Joined",
+    "notFound": "User not found",
+    "private": "This account is private",
+    "followToSee": "Follow to see their posts"
+  },
+  "post": {
+    "create": {
+      "title": "Create post",
+      "placeholder": "What's on your mind?",
+      "submit": "Post",
+      "image": "Add image",
+      "cancel": "Cancel"
+    },
+    "actions": {
+      "like": "Like",
+      "unlike": "Unlike",
+      "comment": "Comment",
+      "share": "Share",
+      "delete": "Delete post"
+    },
+    "comments": {
+      "title": "Comments",
+      "placeholder": "Write a comment...",
+      "submit": "Comment",
+      "empty": "No comments yet",
+      "loadMore": "Load more comments"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "emptySubtitle": "When someone interacts with your posts, you'll see it here",
+    "markAsRead": "Mark as read",
+    "markAllAsRead": "Mark all as read",
+    "liked": "liked your post",
+    "commented": "commented on your post",
+    "followed": "started following you"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": {
+      "title": "Profile",
+      "name": "Display name",
+      "username": "Username",
+      "bio": "Bio",
+      "website": "Website",
+      "save": "Save changes"
+    },
+    "account": {
+      "title": "Account",
+      "email": "Email",
+      "password": "Password",
+      "delete": "Delete account"
+    },
+    "appearance": {
+      "title": "Appearance",
+      "theme": "Theme",
+      "language": "Language",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    }
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "users": {
+      "title": "User Management",
+      "total": "Total users",
+      "active": "Active users",
+      "search": "Search users",
+      "ban": "Ban user",
+      "unban": "Unban user",
+      "role": "Change role"
+    },
+    "posts": {
+      "title": "Post Management",
+      "total": "Total posts",
+      "reported": "Reported posts",
+      "delete": "Delete post"
+    },
+    "stats": {
+      "title": "Statistics",
+      "users": "Users",
+      "posts": "Posts",
+      "comments": "Comments",
+      "likes": "Likes"
+    }
+  },
+  "errors": {
+    "network": "Network error",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Access forbidden",
+    "notFound": "Not found",
+    "validation": "Validation error",
+    "server": "Server error",
+    "unknown": "Unknown error"
+  }
+}
