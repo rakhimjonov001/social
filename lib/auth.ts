@@ -1,13 +1,12 @@
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
-import GitHub from "next-auth/providers/github";
-import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import type { NextAuthConfig, DefaultSession } from "next-auth";
+import { authConfig } from "./auth.config"; // Импортируем конфиг
+import type { DefaultSession } from "next-auth";
 
-// Расширяем типы для TS
+// Расширяем типы
 declare module "next-auth" {
   interface Session {
     user: {
@@ -17,26 +16,20 @@ declare module "next-auth" {
   }
 }
 
-export const authConfig: NextAuthConfig = {
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig, // Распаковываем базовый конфиг
   adapter: PrismaAdapter(prisma),
   secret: process.env.AUTH_SECRET,
   trustHost: true,
   session: {
-    strategy: "jwt", // Оставляем JWT, это правильно для Middleware
+    strategy: "jwt",
   },
   pages: {
     signIn: "/auth/login",
     error: "/auth/error",
   },
   providers: [
-    GitHub({
-      clientId: process.env.GITHUB_ID,
-      clientSecret: process.env.GITHUB_SECRET,
-    }),
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
+    ...authConfig.providers, // Оставляем Google и GitHub из конфига
     Credentials({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
@@ -45,7 +38,6 @@ export const authConfig: NextAuthConfig = {
           where: { email: credentials.email as string },
         });
 
-        // Если юзер зашел через OAuth, у него может не быть пароля
         if (!user || !user.password) return null;
 
         const isPasswordValid = await bcrypt.compare(
@@ -66,19 +58,7 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    // ВАЖНО: Проверка авторизации для Middleware
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isOnFeed = nextUrl.pathname.startsWith("/feed");
-      const isOnAuth = nextUrl.pathname.startsWith("/auth");
-
-      if (isOnFeed && !isLoggedIn) return false; // Редирект на логин
-      if (isOnAuth && isLoggedIn) {
-        return Response.redirect(new URL("/feed", nextUrl));
-      }
-      return true;
-    },
-
+    ...authConfig.callbacks, // Важно сохранить authorized из конфига
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
@@ -89,17 +69,13 @@ export const authConfig: NextAuthConfig = {
       }
       return token;
     },
-
     async session({ session, token }) {
-      if (token) {
+      if (token && session.user) {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
       }
       return session;
     },
   },
-  // Отключаем debug в продакшене, чтобы не спамить в консоль
   debug: process.env.NODE_ENV === "development",
-};
-
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+});
