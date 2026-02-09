@@ -2,8 +2,7 @@
 
 /**
  * Follow Server Actions
- * 
- * Server-side actions for follow management:
+ * * Server-side actions for follow management:
  * - Follow user
  * - Unfollow user
  * - Get followers/following lists
@@ -23,10 +22,11 @@ export type ActionResult = {
   data?: unknown;
 };
 
+// Исправлено: username теперь может быть null в соответствии с Prisma
 export type UserPreview = {
   id: string;
   name: string | null;
-  username: string;
+  username: string | null; 
   image: string | null;
   bio: string | null;
   isFollowing: boolean;
@@ -103,8 +103,14 @@ export async function followUser(userId: string): Promise<ActionResult> {
       });
     });
 
-    revalidatePath(`/profile/${userToFollow.username}`);
-    revalidatePath(`/profile/${session.user.username}`);
+    // Исправлено: добавлена проверка на наличие username перед ревалидацией
+    if (userToFollow.username) {
+      revalidatePath(`/profile/${userToFollow.username}`);
+    }
+    
+    if (session.user.username) {
+      revalidatePath(`/profile/${session.user.username}`);
+    }
 
     return {
       success: true,
@@ -134,13 +140,6 @@ export async function unfollowUser(userId: string): Promise<ActionResult> {
       };
     }
 
-    if (session.user.id === userId) {
-      return {
-        success: false,
-        message: "You cannot unfollow yourself",
-      };
-    }
-
     // Get user for revalidation
     const userToUnfollow = await prisma.user.findUnique({
       where: { id: userId },
@@ -156,10 +155,13 @@ export async function unfollowUser(userId: string): Promise<ActionResult> {
       },
     });
 
-    if (userToUnfollow) {
+    if (userToUnfollow?.username) {
       revalidatePath(`/profile/${userToUnfollow.username}`);
     }
-    revalidatePath(`/profile/${session.user.username}`);
+    
+    if (session.user.username) {
+      revalidatePath(`/profile/${session.user.username}`);
+    }
 
     return {
       success: true,
@@ -257,7 +259,6 @@ export async function getFollowers(
     nextCursor = nextItem!.id;
   }
 
-  // Check if current user follows each follower
   let followingIds: string[] = [];
   if (currentUserId) {
     const following = await prisma.follow.findMany({
@@ -270,7 +271,7 @@ export async function getFollowers(
     followingIds = following.map((f) => f.followingId);
   }
 
-  const users = followers.map((f) => ({
+  const users: UserPreview[] = followers.map((f) => ({
     ...f.follower,
     isFollowing: followingIds.includes(f.follower.id),
   }));
@@ -326,7 +327,6 @@ export async function getFollowing(
     nextCursor = nextItem!.id;
   }
 
-  // Check if current user follows each user
   let followingIds: string[] = [];
   if (currentUserId) {
     const currentUserFollowing = await prisma.follow.findMany({
@@ -339,7 +339,7 @@ export async function getFollowing(
     followingIds = currentUserFollowing.map((f) => f.followingId);
   }
 
-  const users = following.map((f) => ({
+  const users: UserPreview[] = following.map((f) => ({
     ...f.following,
     isFollowing: followingIds.includes(f.following.id),
   }));
