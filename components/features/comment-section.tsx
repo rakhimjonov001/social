@@ -13,8 +13,7 @@ interface Comment {
   createdAt: Date;
   parentId: string | null;
   author: {
-    id: string;
-    username: string;
+    id: string | null;
     name: string | null;
     image: string | null;
   };

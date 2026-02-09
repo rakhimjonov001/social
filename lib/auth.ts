@@ -3,10 +3,10 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { authConfig } from "./auth.config"; // Импортируем конфиг
+import { authConfig } from "./auth.config";
 import type { DefaultSession } from "next-auth";
 
-// Расширяем типы
+// Расширяем типы сессии
 declare module "next-auth" {
   interface Session {
     user: {
@@ -17,7 +17,7 @@ declare module "next-auth" {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  ...authConfig, // Распаковываем базовый конфиг
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
   secret: process.env.AUTH_SECRET,
   trustHost: true,
@@ -29,7 +29,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/auth/error",
   },
   providers: [
-    ...authConfig.providers, // Оставляем Google и GitHub из конфига
+    ...authConfig.providers,
     Credentials({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
@@ -58,12 +58,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    ...authConfig.callbacks, // Важно сохранить authorized из конфига
+    ...authConfig.callbacks,
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
+        // Берем username прямо из объекта user, который вернула база или OAuth
         token.username = (user as any).username;
       }
+      
+      // Позволяет обновлять сессию на лету (например, после смены ника)
       if (trigger === "update" && session) {
         return { ...token, ...session };
       }
@@ -77,5 +80,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
+
+  // ГЕНЕРАЦИЯ USERNAME ПРИ ВХОДЕ ЧЕРЕЗ GOOGLE/GITHUB
+  events: {
+    async createUser({ user }) {
+      // Это сработает только один раз при регистрации через OAuth
+      if (!user.username) {
+        const baseName = user.email?.split("@")[0] || "user";
+        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+        const generatedUsername = `${baseName}_${randomSuffix}`;
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { username: generatedUsername },
+        });
+        
+        // Обновляем объект пользователя, чтобы он попал в JWT
+        user.username = generatedUsername;
+      }
+    },
+  },
+  
   debug: process.env.NODE_ENV === "development",
 });

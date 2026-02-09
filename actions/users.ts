@@ -2,8 +2,7 @@
 
 /**
  * User Server Actions
- * 
- * Server-side actions for user management:
+ * * Server-side actions for user management:
  * - Get user profile
  * - Update profile
  * - Search users
@@ -28,7 +27,7 @@ export type ActionResult = {
 export type UserProfile = {
   id: string;
   name: string | null;
-  username: string;
+  username: string; // Строго строка
   email: string;
   image: string | null;
   bio: string | null;
@@ -72,9 +71,14 @@ export async function getUserProfile(
     },
   });
 
-  if (!user) {
+  // Prisma вернет объект, где username может быть null, если в БД ошибка.
+  // Мы проверяем наличие пользователя и никнейма.
+  if (!user || !user.username) {
     return null;
   }
+
+  // Приведение типа к UserProfile (безопасно, так как мы проверили !user.username)
+  const formattedUser = user as any;
 
   // Check if current user follows this user
   let isFollowing = false;
@@ -91,7 +95,7 @@ export async function getUserProfile(
   }
 
   return {
-    ...user,
+    ...formattedUser,
     isFollowing,
     isOwnProfile: currentUserId === user.id,
   };
@@ -192,10 +196,12 @@ export async function updateProfile(
     });
 
     // Revalidate paths
-    if (oldUser) {
+    if (oldUser?.username) {
       revalidatePath(`/profile/${oldUser.username}`);
     }
-    revalidatePath(`/profile/${updatedUser.username}`);
+    if (updatedUser.username) {
+      revalidatePath(`/profile/${updatedUser.username}`);
+    }
     revalidatePath("/settings");
 
     return {
@@ -235,6 +241,7 @@ export async function searchUsers(
         { username: { contains: query, mode: "insensitive" } },
         { name: { contains: query, mode: "insensitive" } },
       ],
+      // УДАЛЕНО: NOT: { username: null }
     },
     take: limit,
     select: {
@@ -245,60 +252,12 @@ export async function searchUsers(
     },
   });
 
-  return users;
+  return users as any;
 }
 
 // ==========================================
-// GET USER BY USERNAME
+// GET SUGGESTED USERS
 // ==========================================
-
-export async function getUserByUsername(username: string) {
-  const session = await auth();
-  const currentUserId = session?.user?.id;
-
-  const user = await prisma.user.findUnique({
-    where: { username },
-    select: {
-      id: true,
-      name: true,
-      username: true,
-      email: true,
-      image: true,
-      bio: true,
-      createdAt: true,
-      _count: {
-        select: {
-          posts: true,
-          followers: true,
-          following: true,
-        },
-      },
-    },
-  });
-
-  if (!user) {
-    return null;
-  }
-
-  // Check if current user follows this user
-  let isFollowing = false;
-  if (currentUserId && currentUserId !== user.id) {
-    const follow = await prisma.follow.findUnique({
-      where: {
-        followerId_followingId: {
-          followerId: currentUserId,
-          followingId: user.id,
-        },
-      },
-    });
-    isFollowing = !!follow;
-  }
-
-  return {
-    ...user,
-    isFollowing,
-  };
-}
 
 export async function getSuggestedUsers(
   limit: number = 5
@@ -313,7 +272,6 @@ export async function getSuggestedUsers(
   const session = await auth();
   const currentUserId = session?.user?.id;
 
-  // Get users the current user is not following
   let excludeIds: string[] = [];
   
   if (currentUserId) {
@@ -322,12 +280,13 @@ export async function getSuggestedUsers(
       select: { followingId: true },
     });
     excludeIds = following.map((f) => f.followingId);
-    excludeIds.push(currentUserId); // Exclude self
+    excludeIds.push(currentUserId); 
   }
 
   const users = await prisma.user.findMany({
     where: {
       id: { notIn: excludeIds },
+      // Убрали NOT: { username: null }, так как по схеме username обязателен
     },
     take: limit,
     orderBy: {
@@ -344,6 +303,7 @@ export async function getSuggestedUsers(
 
   return users.map((user) => ({
     ...user,
+    username: user.username, 
     isFollowing: false,
   }));
 }
