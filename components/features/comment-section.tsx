@@ -160,10 +160,10 @@ export function CommentSection({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-sm">
-              {comment.author.name || comment.author.username}
+            {(comment.author as any).name || (comment.author as any).username}
             </span>
             <span className="text-xs text-muted">
-              @{comment.author.username}
+            @{(comment.author as any).username}
             </span>
             <span className="text-xs text-muted">·</span>
             <span className="text-xs text-muted">
@@ -226,7 +226,7 @@ export function CommentSection({
                   setReplyContent(e.target.value);
                   adjustTextareaHeight(e.target);
                 }}
-                placeholder={`Reply to ${comment.author.name || comment.author.username}...`}
+                placeholder={`Reply to ${(comment.author as any).name || (comment.author as any).username}...`}
                 className="w-full resize-none border-0 bg-transparent p-0 text-sm placeholder:text-muted focus:outline-none"
                 rows={1}
                 maxLength={1000}
