@@ -292,3 +292,12 @@ export async function getSuggestedUsers(
     isFollowing: false,
   }));
 }
+
+// ==========================================
+// ALIAS FOR PROFILE PAGE
+// ==========================================
+
+export async function getUserByUsername(username: string) {
+  // Вызываем уже готовую функцию, которую мы написали ранее
+  return await getUserProfile(username);
+}
