@@ -71,16 +71,12 @@ export async function getUserProfile(
     },
   });
 
-  // Prisma вернет объект, где username может быть null, если в БД ошибка.
-  // Мы проверяем наличие пользователя и никнейма.
-  if (!user || !user.username) {
+  // Если юзера нет или у него нет ника (защита от null)
+  if (!user || user.username === null) {
     return null;
   }
 
-  // Приведение типа к UserProfile (безопасно, так как мы проверили !user.username)
-  const formattedUser = user as any;
-
-  // Check if current user follows this user
+  // Проверяем подписку
   let isFollowing = false;
   if (currentUserId && currentUserId !== user.id) {
     const follow = await prisma.follow.findUnique({
@@ -94,8 +90,16 @@ export async function getUserProfile(
     isFollowing = !!follow;
   }
 
+  // Явно формируем объект, чтобы TS не ругался на string | null
   return {
-    ...formattedUser,
+    id: user.id,
+    name: user.name,
+    username: user.username, // Теперь TS понимает, что это string из-за проверки выше
+    email: user.email,
+    image: user.image,
+    bio: user.bio,
+    createdAt: user.createdAt,
+    _count: user._count,
     isFollowing,
     isOwnProfile: currentUserId === user.id,
   };
@@ -164,8 +168,8 @@ export async function updateProfile(
 
     const { name, username, bio, image } = validatedData.data;
 
-    // Check if username is taken (if changing)
-    if (username && username !== session.user.username) {
+    // Проверка уникальности
+    if (username && username !== (session.user as any).username) {
       const existingUser = await prisma.user.findUnique({
         where: { username },
       });
@@ -178,13 +182,6 @@ export async function updateProfile(
       }
     }
 
-    // Get old username for revalidation
-    const oldUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { username: true },
-    });
-
-    // Update user
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
@@ -195,13 +192,11 @@ export async function updateProfile(
       },
     });
 
-    // Revalidate paths
-    if (oldUser?.username) {
-      revalidatePath(`/profile/${oldUser.username}`);
-    }
-    if (updatedUser.username) {
-      revalidatePath(`/profile/${updatedUser.username}`);
-    }
+    // Безопасная ревалидация
+    const oldUsername = (session.user as any).username;
+    if (oldUsername) revalidatePath(`/profile/${oldUsername}`);
+    if (updatedUser.username) revalidatePath(`/profile/${updatedUser.username}`);
+    
     revalidatePath("/settings");
 
     return {
@@ -225,12 +220,7 @@ export async function updateProfile(
 export async function searchUsers(
   query: string,
   limit: number = 10
-): Promise<{
-  id: string;
-  name: string | null;
-  username: string;
-  image: string | null;
-}[]> {
+) {
   if (!query || query.length < 2) {
     return [];
   }
@@ -241,7 +231,6 @@ export async function searchUsers(
         { username: { contains: query, mode: "insensitive" } },
         { name: { contains: query, mode: "insensitive" } },
       ],
-      // УДАЛЕНО: NOT: { username: null }
     },
     take: limit,
     select: {
@@ -252,7 +241,11 @@ export async function searchUsers(
     },
   });
 
-  return users as any;
+  // Используем маппинг для гарантии, что username не null для TS
+  return users.map(u => ({
+    ...u,
+    username: u.username as string
+  }));
 }
 
 // ==========================================
@@ -261,14 +254,7 @@ export async function searchUsers(
 
 export async function getSuggestedUsers(
   limit: number = 5
-): Promise<{
-  id: string;
-  name: string | null;
-  username: string;
-  image: string | null;
-  bio: string | null;
-  isFollowing: boolean;
-}[]> {
+) {
   const session = await auth();
   const currentUserId = session?.user?.id;
 
@@ -286,7 +272,6 @@ export async function getSuggestedUsers(
   const users = await prisma.user.findMany({
     where: {
       id: { notIn: excludeIds },
-      // Убрали NOT: { username: null }, так как по схеме username обязателен
     },
     take: limit,
     orderBy: {
@@ -303,7 +288,7 @@ export async function getSuggestedUsers(
 
   return users.map((user) => ({
     ...user,
-    username: user.username, 
+    username: user.username as string, 
     isFollowing: false,
   }));
 }
